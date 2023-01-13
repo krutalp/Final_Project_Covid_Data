@@ -1,0 +1,88 @@
+---
+title: "Project_Code"
+author: "Team 2"
+date: "1/13/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# import libraries 
+library(ggplot2)
+library(dplyr)
+
+# read the first data
+case_count <- read.csv('us-states.csv')
+
+
+```
+
+```{r}
+case_count <- case_count %>% dplyr::mutate(date = as.Date(date) )
+
+# filter dataset by state and case totals 
+state_count <- do.call(data.frame, 
+                       aggregate(cases ~ state, case_Count, FUN = function(x) c(sum(x))))
+
+
+
+
+```
+Exploratory Data Analysis on US-States Dataset
+
+
+```{r, fig.height= 3 , fig.width= 5}
+
+# Create a bar graph of total case count by each US state
+
+#ggsave("plot.png", width = 5, height = 5) Saves last plot
+#as 5’ x 5’ file named "plot.png" in working directory.
+#Matches file type to file extension.
+
+
+ggplot(state_count) +
+    geom_bar( aes(x=state, y=cases), stat="identity", fill="red", alpha=0.7) + ggtitle('Total Cases per US State/Territory') + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+```
+
+```{r}
+library(lubridate)
+
+
+class(ymd("2021-04-19"))
+  
+```
+
+```{r}
+
+state_case_totals <- function(region) {
+  
+    filtered_data <- dplyr::filter(case_count, state == region)
+    filtered_data[,"cum_cases"] <- cumsum(filtered_data$cases)
+  
+    label <- paste('Cumulative Cases over Time in', region)
+    
+    ggplot(data = filtered_data, aes(x=date, y=cases)) + geom_point() + ggtitle(label) + xlab("Date") + ylab("Cumulative Cases") + scale_x_date(breaks = scales::pretty_breaks(n=20)) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) + geom_text(aes(x=ymd("2021-04-1"), label="Covid Vaccines Avaliable", y=max(filtered_data$cases) - median(filtered_data$cases)), colour="red", angle=90) + geom_vline(xintercept= ymd("2021-04-19") ,lwd=0.5,colour="red",label_value("Covid Vaccines Avaliable"))
+}
+
+state_case_totals("New York")
+```
+
+Exploratory Data Analysis on US-States Dataset
+
+```{r}
+
+
+
+
+```
+
+
+
+
+
+
