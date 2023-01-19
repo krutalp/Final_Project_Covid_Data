@@ -6,12 +6,6 @@ Group Members:
 3. Maya Niyogi
 4. Krutal Patel
 
-#### Description
-
-
-#### Data Sets
-
-
 
 #### Research Questions:
 How do vaccinations across each state compare with total cases across each state in 2021?
@@ -19,4 +13,3 @@ How do vaccinations across each state compare with total cases across each state
 Is there a significant correlation between rate of vaccinations and number of total cases by state over time?
 
 
-#### add final data viz here
