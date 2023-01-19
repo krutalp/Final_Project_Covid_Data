@@ -56,22 +56,31 @@ class(ymd("2021-04-19"))
   
 ```
 
-```{r, fig.height= 3 , fig.width= 5}
+```{r}
 
 state_case_totals <- function(region) {
   
     filtered_data <- dplyr::filter(case_count, state == region)
     filtered_data[,"cum_cases"] <- cumsum(filtered_data$cases)
   
-    label <- paste('Cumulative Cases over Time in', region)
+    label <- paste('New Daily Number of Covid Cases over Time in', region)
     
-    ggplot(data = filtered_data, aes(x=date, y=cases)) + geom_point() + ggtitle(label) + xlab("Date") + ylab("New Daily Number of Cases") + scale_x_date(breaks = scales::pretty_breaks(n=20)) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) + geom_text(aes(x=ymd("2021-04-1"), label="Covid Vaccines Avaliable", y=max(filtered_data$cases) - median(filtered_data$cases)), colour="red", angle=90) + geom_vline(xintercept= ymd("2021-04-19") ,lwd=0.5,colour="red",label_value("Covid Vaccines Avaliable")) + theme(plot.title = element_text(hjust = 0.5))
+    ggplot(data = filtered_data, aes(x=date, y=cases)) + geom_point() + ggtitle(label) + xlab("Date") + ylab("Number of Cases") + scale_x_date(breaks = scales::pretty_breaks(n=20)) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) + geom_text(aes(x=ymd("2021-04-1"), label="Covid Vaccines Avaliable", y=max(filtered_data$cases) - median(filtered_data$cases)), colour="red", angle=90) + geom_vline(xintercept= ymd("2021-04-19") ,lwd=0.5,colour="red",label_value("Covid Vaccines Avaliable")) + theme(plot.title = element_text(hjust = 0.5))
 }
 
+```
 
+
+
+
+
+Type any state name to visualize the number of new cases over time 
+
+```{r}
 
 # Visualizations for each of the US States and territories 
 state_case_totals("New York")
+
 ```
 
 
@@ -130,7 +139,7 @@ vaccinations_by_state <- function(region) {
     df_filtered <- dplyr::filter(new_Df, Jurisdiction == region)
     
     
-    label <- paste('Vaccination Allocations over Time by Vaccine Type in', region)
+    label <- paste('Vaccination Allocations over Time in', region)
     
     # get total of vaccines by summing over each type of vaccine type
     
