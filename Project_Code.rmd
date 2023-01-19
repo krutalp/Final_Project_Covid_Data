@@ -44,7 +44,7 @@ Exploratory Data Analysis on US-States Dataset
 
 
 ggplot(state_count) +
-    geom_bar( aes(x=state, y=cases), stat="identity", fill="red", alpha=0.7) + ggtitle('Total Cases per US State/Territory') + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+    geom_bar( aes(x=state, y=cases), stat="identity", fill="red", alpha=0.7) + ggtitle('Total Cases per US State/Territory') + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + theme(plot.title = element_text(hjust = 0.5))
 
 ```
 
@@ -56,7 +56,7 @@ class(ymd("2021-04-19"))
   
 ```
 
-```{r}
+```{r, fig.height= 3 , fig.width= 5}
 
 state_case_totals <- function(region) {
   
@@ -65,7 +65,7 @@ state_case_totals <- function(region) {
   
     label <- paste('Cumulative Cases over Time in', region)
     
-    ggplot(data = filtered_data, aes(x=date, y=cases)) + geom_point() + ggtitle(label) + xlab("Date") + ylab("Cumulative Cases") + scale_x_date(breaks = scales::pretty_breaks(n=20)) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) + geom_text(aes(x=ymd("2021-04-1"), label="Covid Vaccines Avaliable", y=max(filtered_data$cases) - median(filtered_data$cases)), colour="red", angle=90) + geom_vline(xintercept= ymd("2021-04-19") ,lwd=0.5,colour="red",label_value("Covid Vaccines Avaliable"))
+    ggplot(data = filtered_data, aes(x=date, y=cases)) + geom_point() + ggtitle(label) + xlab("Date") + ylab("New Daily Number of Cases") + scale_x_date(breaks = scales::pretty_breaks(n=20)) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) + geom_text(aes(x=ymd("2021-04-1"), label="Covid Vaccines Avaliable", y=max(filtered_data$cases) - median(filtered_data$cases)), colour="red", angle=90) + geom_vline(xintercept= ymd("2021-04-19") ,lwd=0.5,colour="red",label_value("Covid Vaccines Avaliable")) + theme(plot.title = element_text(hjust = 0.5))
 }
 
 
@@ -74,8 +74,10 @@ state_case_totals <- function(region) {
 state_case_totals("New York")
 ```
 
+
 Exploratory Data Analysis on Vaccine Datasets
 
+1. data cleaning: read the csvs, contain null values, fix data types
 
 ```{r}
 # read in vaccination data by vaccine type 
@@ -83,7 +85,7 @@ jansen_vaccines <- read.csv("COVID-19_Vaccine_Distribution_Allocations_by_Jurisd
 pfizer_vaccines <- read.csv("COVID-19_Vaccine_Distribution_Allocations_by_Jurisdiction_-_Pfizer.csv")
 moderna_vaccines <- read.csv("COVID-19_Vaccine_Distribution_Allocations_by_Jurisdiction_-_Moderna.csv")
 
-# for each vaccine dataset, rename the cols to specifiy the vaccine type
+# for each vaccine dataset, rename the cols to specify the vaccine type
 names(jansen_vaccines)[names(jansen_vaccines) == 'X1st.Dose.Allocations'] <- 'Jansen_1st_Dose_Counts'
 names(pfizer_vaccines)[names(pfizer_vaccines) == 'X1st.Dose.Allocations'] <- 'Pfizer_1st_Dose_Counts'
 names(pfizer_vaccines)[names(pfizer_vaccines) == 'X2nd.Dose.Allocations'] <- 'Pfizer_2nd_Dose_Counts'
@@ -92,78 +94,128 @@ names(moderna_vaccines)[names(moderna_vaccines) == 'X2nd.Dose.Allocations'] <- '
 
 ```
 
+
+Visualize the total number of new vaccine doeses over time for a particular state
+
 ```{r}
 # Visualization over time for total vaccine doses for each state
 
 merged_state_df1 <- full_join(pfizer_vaccines, moderna_vaccines, by=c('Week.of.Allocations','Jurisdiction'))
+
+# remove dose 1 for pfizer and moderna columns
 merged_state_df1 <- merged_state_df1[-c(3,5)]
+
 merged_state_df2 <- full_join(merged_state_df1, jansen_vaccines, by=c('Week.of.Allocations','Jurisdiction'))
-# reverse the order of the data-frame to keep it in chronological order
-merged_state_df2 <- apply(merged_state_df2, 2, rev)
-merged_state_df2 <- as.data.frame(merged_state_df2)
 
 # replace Null values with quantity 0
 merged_state_df2[is.na(merged_state_df2)] = 0
 
 
+# covert columns to numeric
+new_Df <- merged_state_df2 %>% mutate(Pfizer_2nd_Dose_Counts = as.numeric(Pfizer_2nd_Dose_Counts), Moderna_2nd_Dose_Counts = 
+                                        as.numeric(Moderna_2nd_Dose_Counts), Jansen_1st_Dose_Counts = as.numeric(Jansen_1st_Dose_Counts), Week.of.Allocations = as.Date(Week.of.Allocations, "%m/%d/%Y"))
+
+
+new_Df <- new_Df %>% arrange((Week.of.Allocations))
+View(new_Df)
+
+```
+
+
+
+```{r}
 
 vaccinations_by_state <- function(region) {
   
-    df_filtered <- dplyr::filter(merged_state_df2, Jurisdiction == region)
+    df_filtered <- dplyr::filter(new_Df, Jurisdiction == region)
     
     
     label <- paste('Vaccination Allocations over Time by Vaccine Type in', region)
     
     # get total of vaccines by summing over each type of vaccine type
     
-    df_filtered %>%
-    mutate(vaccine_sum = rowSums(across(c("Pfizer_2nd_Dose_Counts", "Moderna_2nd_Dose_Counts","Jansen_1st_Dose_Counts"))))
-    View(df_filtered)
+    df_filtered <- df_filtered %>%
+    mutate(vaccine_sum = Pfizer_2nd_Dose_Counts + Moderna_2nd_Dose_Counts + Jansen_1st_Dose_Counts)
     
-    ggplot(data = rev_data_frame, aes(x = Week.of.Allocations, y = Pfizer_2nd_Dose_Counts))  + geom_point() + geom_line(group = 1, color = 'red') + ggtitle(label) + xlab("Week of Allocations") + ylab("Number of Doses") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+    # compute cumulative number of vaccines given
+    df_filtered[,"cum_doses"] <- cumsum(df_filtered$vaccine_sum)
+
+    ggplot(data = df_filtered, aes(x = Week.of.Allocations, y = cum_doses)) + geom_point() + geom_line(color = 'blue') + ggtitle(label) + xlab("Week of Allocations") + ylab("Number of Total Doses") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + scale_x_date(date_labels = "%Y %b") + theme(plot.title = element_text(hjust = 0.5))
 
 }
 
 ```
 
-```{r}
-#vaccinations_by_state("California")
-head(merged_state_df2)
+
+```{r,fig.height= 3 , fig.width= 5}
+vaccinations_by_state("New Jersey")
 
 ```
+Create Bar Graph to show total vaccinations for each state accross all times
+
+```{r, fig.height= 3 , fig.width= 5}
+state_totals <- new_Df %>%
+    mutate(vaccine_sum = Pfizer_2nd_Dose_Counts + Moderna_2nd_Dose_Counts + Jansen_1st_Dose_Counts)
 
 
-```{r}
-class(merged_state_df2$Pfizer_2nd_Dose_Counts[1])
-
-```
-
-```{r}
-vaccinations_by_state("New York")
-
-```
+# filter dataset by state and case totals 
+state_totals <- do.call(data.frame, 
+                       aggregate(vaccine_sum ~ Jurisdiction, state_totals, FUN = function(x) c(sum(x))))
 
 
-```{r}
 
 # Clean the data by combining all state data over time similar to what we did above with the covid cases data
 
+ggplot(state_totals) +
+    geom_bar( aes(x=Jurisdiction, y=vaccine_sum), stat="identity", fill="blue", alpha=0.7) + ggtitle('Total Vaccines Administered per US State/Territory') + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + theme(plot.title = element_text(hjust = 0.5))
 
 ```
+
+```{r, fig.height= 3 , fig.width= 5}
+
+# Create map data for US Cases
+
+library(usmap)
+
+plot_usmap(data = state_count, values = "cases", color = "black") + 
+  scale_fill_continuous(low = 'white', high = 'red', name = "cases", label = scales::comma) + 
+  theme(legend.position = "right") + ggtitle("Total US Covid Cases") + theme(plot.title = element_text(hjust = 0.5))
+
+
+```
+
+```{r, fig.height= 3 , fig.width= 5}
+# Map plot for covid vaccinations for each US State
+
+# Create map data for US Cases
+
+colnames(state_totals)[1] <- "state"
+plot_usmap(data = state_totals, values = "vaccine_sum", color = "black") + 
+  scale_fill_continuous(low = 'gray', high = 'blue', name = "Vaccines", label = scales::comma) + 
+  theme(legend.position = "right") + ggtitle("Total US Covid Vaccinations") + theme(plot.title = element_text(hjust = 0.5))
+
+```
+Analysis Comments
+1. Strong relationship between States with high Covid cases with states that received higher total vaccine allocations
 
 
 ```{r}
-# Generate the map data and visualize the maps
+
+# compute correlation coef R^2 between the two data
+
+final_df <- merge(state_count, state_totals, by = "state")
 
 
+final_df
 
 ```
+Correlation Test
 
 ```{r}
-# Any additional visualizations we want to explore here:
+covid_cases_Data <- final_df$cases
+covid_vacc_Data <- final_df$vaccine_sum
 
-
-```
-
-
-
+corr_coef <- cor(covid_cases_Data, covid_vacc_Data)
+print(corr_coef)
+```      
+A correlation coef value of 0.977 indicates a strong correlation between the number of covid cases and the number of vaccines allocated to that respective state. This supports the conclusion regarding the governments overall strategy to supply more vaccines to states with higher populations and a large load of covid cases.
