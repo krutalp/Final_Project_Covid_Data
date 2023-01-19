@@ -17,7 +17,7 @@ library(dplyr)
 
 # read the first data
 case_count <- read.csv('us-states.csv')
-
+head(case_count)
 
 ```
 
@@ -26,10 +26,9 @@ case_count <- case_count %>% dplyr::mutate(date = as.Date(date) )
 
 # filter dataset by state and case totals 
 state_count <- do.call(data.frame, 
-                       aggregate(cases ~ state, case_Count, FUN = function(x) c(sum(x))))
+                       aggregate(cases ~ state, case_count, FUN = function(x) c(sum(x))))
 
-
-
+head(state_count)
 
 ```
 Exploratory Data Analysis on US-States Dataset
@@ -69,20 +68,102 @@ state_case_totals <- function(region) {
     ggplot(data = filtered_data, aes(x=date, y=cases)) + geom_point() + ggtitle(label) + xlab("Date") + ylab("Cumulative Cases") + scale_x_date(breaks = scales::pretty_breaks(n=20)) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) + geom_text(aes(x=ymd("2021-04-1"), label="Covid Vaccines Avaliable", y=max(filtered_data$cases) - median(filtered_data$cases)), colour="red", angle=90) + geom_vline(xintercept= ymd("2021-04-19") ,lwd=0.5,colour="red",label_value("Covid Vaccines Avaliable"))
 }
 
+
+
+# Visualizations for each of the US States and territories 
 state_case_totals("New York")
 ```
 
-Exploratory Data Analysis on US-States Dataset
+Exploratory Data Analysis on Vaccine Datasets
+
+
+```{r}
+# read in vaccination data by vaccine type 
+jansen_vaccines <- read.csv("COVID-19_Vaccine_Distribution_Allocations_by_Jurisdiction_-_Janssen.csv")
+pfizer_vaccines <- read.csv("COVID-19_Vaccine_Distribution_Allocations_by_Jurisdiction_-_Pfizer.csv")
+moderna_vaccines <- read.csv("COVID-19_Vaccine_Distribution_Allocations_by_Jurisdiction_-_Moderna.csv")
+
+# for each vaccine dataset, rename the cols to specifiy the vaccine type
+names(jansen_vaccines)[names(jansen_vaccines) == 'X1st.Dose.Allocations'] <- 'Jansen_1st_Dose_Counts'
+names(pfizer_vaccines)[names(pfizer_vaccines) == 'X1st.Dose.Allocations'] <- 'Pfizer_1st_Dose_Counts'
+names(pfizer_vaccines)[names(pfizer_vaccines) == 'X2nd.Dose.Allocations'] <- 'Pfizer_2nd_Dose_Counts'
+names(moderna_vaccines)[names(moderna_vaccines) == 'X1st.Dose.Allocations'] <- 'Moderna_1st_Dose_Counts'
+names(moderna_vaccines)[names(moderna_vaccines) == 'X2nd.Dose.Allocations'] <- 'Moderna_2nd_Dose_Counts'
+
+```
+
+```{r}
+# Visualization over time for total vaccine doses for each state
+
+merged_state_df1 <- full_join(pfizer_vaccines, moderna_vaccines, by=c('Week.of.Allocations','Jurisdiction'))
+merged_state_df1 <- merged_state_df1[-c(3,5)]
+merged_state_df2 <- full_join(merged_state_df1, jansen_vaccines, by=c('Week.of.Allocations','Jurisdiction'))
+# reverse the order of the data-frame to keep it in chronological order
+merged_state_df2 <- apply(merged_state_df2, 2, rev)
+merged_state_df2 <- as.data.frame(merged_state_df2)
+
+# replace Null values with quantity 0
+merged_state_df2[is.na(merged_state_df2)] = 0
+
+
+
+vaccinations_by_state <- function(region) {
+  
+    df_filtered <- dplyr::filter(merged_state_df2, Jurisdiction == region)
+    
+    
+    label <- paste('Vaccination Allocations over Time by Vaccine Type in', region)
+    
+    # get total of vaccines by summing over each type of vaccine type
+    
+    df_filtered %>%
+    mutate(vaccine_sum = rowSums(across(c("Pfizer_2nd_Dose_Counts", "Moderna_2nd_Dose_Counts","Jansen_1st_Dose_Counts"))))
+    View(df_filtered)
+    
+    ggplot(data = rev_data_frame, aes(x = Week.of.Allocations, y = Pfizer_2nd_Dose_Counts))  + geom_point() + geom_line(group = 1, color = 'red') + ggtitle(label) + xlab("Week of Allocations") + ylab("Number of Doses") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+}
+
+```
+
+```{r}
+#vaccinations_by_state("California")
+head(merged_state_df2)
+
+```
+
+
+```{r}
+class(merged_state_df2$Pfizer_2nd_Dose_Counts[1])
+
+```
+
+```{r}
+vaccinations_by_state("New York")
+
+```
+
 
 ```{r}
 
-
+# Clean the data by combining all state data over time similar to what we did above with the covid cases data
 
 
 ```
 
 
+```{r}
+# Generate the map data and visualize the maps
 
+
+
+```
+
+```{r}
+# Any additional visualizations we want to explore here:
+
+
+```
 
 
 
