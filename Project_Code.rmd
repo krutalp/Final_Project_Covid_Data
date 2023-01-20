@@ -20,13 +20,18 @@ case_count <- read.csv('us-states.csv')
 head(case_count)
 
 ```
+```{r}
+alb <- dplyr::filter(case_count, state == "Alabama")
+sum(alb$cases)
+
+```
 
 ```{r}
 case_count <- case_count %>% dplyr::mutate(date = as.Date(date) )
 
 # filter dataset by state and case totals 
 state_count <- do.call(data.frame, 
-                       aggregate(cases ~ state, case_count, FUN = function(x) c(sum(x))))
+                       aggregate(cases ~ state, case_count, FUN = function(x) c(max(x))))
 
 head(state_count)
 
@@ -63,9 +68,9 @@ state_case_totals <- function(region) {
     filtered_data <- dplyr::filter(case_count, state == region)
     filtered_data[,"cum_cases"] <- cumsum(filtered_data$cases)
   
-    label <- paste('New Daily Number of Covid Cases over Time in', region)
+    label <- paste('Total Number of Covid Cases over Time in', region)
     
-    ggplot(data = filtered_data, aes(x=date, y=cases)) + geom_point() + ggtitle(label) + xlab("Date") + ylab("Number of Cases") + scale_x_date(breaks = scales::pretty_breaks(n=20)) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) + geom_text(aes(x=ymd("2021-04-1"), label="Covid Vaccines Avaliable", y=max(filtered_data$cases) - median(filtered_data$cases)), colour="red", angle=90) + geom_vline(xintercept= ymd("2021-04-19") ,lwd=0.5,colour="red",label_value("Covid Vaccines Avaliable")) + theme(plot.title = element_text(hjust = 0.5))
+    ggplot(data = filtered_data, aes(x=date, y=cases)) + geom_point(color='red') + ggtitle(label) + xlab("Date") + ylab("Number of Cases") + scale_x_date(breaks = scales::pretty_breaks(n=20)) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) + geom_text(aes(x=ymd("2021-04-1"), label="Covid Vaccines Avaliable", y=max(filtered_data$cases) - median(filtered_data$cases)), colour="blue", angle=90) + geom_vline(xintercept= ymd("2021-04-19") ,lwd=0.5,colour="blue",label_value("Covid Vaccines Avaliable")) + theme(plot.title = element_text(hjust = 0.5))
 }
 
 ```
@@ -74,7 +79,7 @@ state_case_totals <- function(region) {
 
 
 
-Type any state name to visualize the number of new cases over time 
+Type any state name to visualize the number of Total/Cumulative cases over time 
 
 ```{r}
 
